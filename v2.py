@@ -103,14 +103,14 @@ class Head(nn.Module):
       return out
 
 class MultiHeadAttention(nn.Module):
-  """multiple heads of self-attention in parallel"""
+    """multiple heads of self-attention in parallel"""
 
-  def __init__(self, num_heads, head_size):
-    super().__init__()
-    self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
-  
-  def forward(self, x):
-    return torch.concat([h(x) for h in self.heads], dim = -1)
+    def __init__(self, num_heads, head_size):
+        super().__init__()
+        self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
+    
+    def forward(self, x):
+        return torch.concat([h(x) for h in self.heads], dim = -1)
 
 
 #  Super simple bigram model
@@ -129,7 +129,7 @@ class BigramLanguageModel(nn.Module):
     self.position_embedding_table = nn.Embedding(block_size, n_embed)
     
     # self attention
-    self.sa_head = Head(n_embed)
+    self.sa_heads = MultiHeadAttention(4, n_embed // 4) # i.e . 4 heads of 8-dimensional attention
     
     self.lm_head = nn.Linear(n_embed, vocab_size)
     
@@ -142,7 +142,7 @@ class BigramLanguageModel(nn.Module):
       pos_emb = self.position_embedding_table(torch.arange(T, device = device)) # (Time = block size, Channels = embedding size)
       
       x = tok_emb + pos_emb # (Batch, Time = block size, Channels = embedding size)
-      x = self.sa_head(x) # apply one head of self-attention (Batch, Time = block size, Channels = embedding size)
+      x = self.sa_heads(x) # apply one head of self-attention (Batch, Time = block size, Channels = embedding size)
       # Apply decoder LM head 
       logits = self.lm_head(x) # (Batch, Time = block size, Channels = vocab size)
 
